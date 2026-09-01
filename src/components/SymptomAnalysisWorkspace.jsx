@@ -1,0 +1,289 @@
+import React, { useState } from "react";
+import {
+  Stethoscope,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+  RefreshCw,
+  ArrowLeft,
+  ShieldAlert,
+  Info,
+  ListChecks,
+  MapPin,
+} from "lucide-react";
+import { analyzeSymptomsWithGemini } from "../services/symptomService";
+import { recordUserActivity } from "../services/db";
+
+export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) {
+  const [symptomsText, setSymptomsText] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!symptomsText || symptomsText.trim().length === 0) {
+      setErrorMsg("Please describe your symptoms to proceed with the analysis.");
+      return;
+    }
+
+    setErrorMsg("");
+    setIsProcessing(true);
+
+    try {
+      const data = await analyzeSymptomsWithGemini(symptomsText);
+      setAnalysisResult(data);
+      recordUserActivity({
+        email: session?.email,
+        type: "symptom",
+        title: `Symptom Check: "${data.summary || symptomsText.slice(0, 40)}"`,
+        summary: data.clinicalExplanation,
+        riskLevel: data.urgencyLevel || "Routine",
+        riskColor: data.urgencyLevel?.toLowerCase().includes("attention") ? "#DC2626" : "#0F766E",
+        data,
+      });
+    } catch (err) {
+      setErrorMsg(err.message || "An error occurred while analyzing symptoms.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReset = () => {
+    setSymptomsText("");
+    setErrorMsg("");
+    setAnalysisResult(null);
+  };
+
+  return (
+    <div className="space-y-6 2xl:space-y-8">
+      {/* Workspace Header */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-teal-50 text-[#0F766E] text-xs 2xl:text-sm font-bold font-mono uppercase mb-3 border border-teal-100">
+          <Stethoscope className="w-4 h-4" />
+          <span>Secondary Health Feature</span>
+        </div>
+        <h1 className="font-brand text-2xl sm:text-3xl 2xl:text-4xl font-bold text-[#0F2747] tracking-tight">
+          Symptom Analysis
+        </h1>
+        <p className="text-sm sm:text-base 2xl:text-lg text-slate-500 mt-1.5 max-w-3xl leading-relaxed">
+          For users who do not have health-measuring equipment and want to describe their symptoms for clinical evaluation.
+        </p>
+      </div>
+
+      {/* Main Content: Form View OR Result View */}
+      {analysisResult ? (
+        /* RESULT VIEW */
+        <div className="space-y-6 2xl:space-y-8 animate-fadeIn">
+          {/* Return / Reset Bar */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setAnalysisResult(null)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 2xl:px-5 2xl:py-3 bg-white rounded-xl border border-slate-200 text-xs sm:text-sm 2xl:text-base font-semibold text-[#0F2747] hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Modify Description</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleReset}
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm 2xl:text-base text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>New Analysis</span>
+            </button>
+          </div>
+
+          {/* Assessment Summary Banner */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 2xl:pb-5 border-b border-slate-100 mb-5">
+              <div>
+                <span className="text-xs 2xl:text-sm font-bold text-slate-400 uppercase tracking-wider font-mono">
+                  Symptom Assessment Overview
+                </span>
+                <h2 className="text-base sm:text-lg 2xl:text-xl font-bold text-[#0F2747] mt-0.5">
+                  Reported: "{analysisResult.summary}"
+                </h2>
+              </div>
+
+              {analysisResult.urgencyLevel && (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-xs 2xl:text-sm font-bold font-mono">
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <span>{analysisResult.urgencyLevel}</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-sm sm:text-base 2xl:text-lg text-[#1E293B] leading-relaxed font-medium">
+              {analysisResult.clinicalExplanation}
+            </p>
+          </div>
+
+          {/* Possible Associated Conditions */}
+          {analysisResult.possibleConditions && analysisResult.possibleConditions.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
+              <h3 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono pb-3.5 border-b border-slate-100 mb-5 flex items-center gap-2">
+                <ListChecks className="w-4 h-4 2xl:w-5 2xl:h-5 text-[#0F766E]" />
+                <span>Possible Associated Health Conditions</span>
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 2xl:gap-6">
+                {analysisResult.possibleConditions.map((cond, idx) => (
+                  <div
+                    key={idx}
+                    className="p-5 2xl:p-6 bg-slate-50/70 border border-slate-200/80 rounded-2xl flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h4 className="font-bold text-sm sm:text-base 2xl:text-lg text-[#0F2747]">
+                          {cond.name}
+                        </h4>
+                        {cond.likelihood && (
+                          <span className="text-[10px] 2xl:text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-teal-50 text-[#0F766E] border border-teal-200/60 flex-shrink-0">
+                            {cond.likelihood}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm 2xl:text-base text-slate-600 leading-relaxed">
+                        {cond.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Supportive Care Guidance Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 2xl:gap-8">
+            {/* Self-Care Advice */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono pb-3.5 border-b border-slate-100 mb-4 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 2xl:w-5 2xl:h-5 text-emerald-600" />
+                  <span>Supportive Self-Care Measures</span>
+                </h3>
+
+                <ul className="space-y-3 2xl:space-y-4">
+                  {analysisResult.selfCareSuggestions && analysisResult.selfCareSuggestions.map((tip, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm 2xl:text-base text-slate-600 leading-relaxed">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* When to Seek Care & Direct Nearby Care Action */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono pb-3.5 border-b border-slate-100 mb-4 flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 2xl:w-5 2xl:h-5 text-rose-600" />
+                  <span>When to Seek Clinical Care</span>
+                </h3>
+
+                <p className="text-xs sm:text-sm 2xl:text-base text-slate-600 leading-relaxed">
+                  {analysisResult.whenToSeekCare ||
+                    "If symptoms worsen rapidly, persist beyond standard recovery periods, or severe pain / breathing difficulty develops, seek immediate in-person medical evaluation."}
+                </p>
+
+                {onNavigateToCare && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToCare}
+                    className="mt-5 px-5 py-3 bg-[#0F2747] hover:bg-[#0A1B33] text-white text-xs 2xl:text-sm font-semibold rounded-xl flex items-center gap-2.5 transition-all cursor-pointer shadow-xs w-full sm:w-auto justify-center"
+                  >
+                    <MapPin className="w-4 h-4 text-teal-400" />
+                    <span>Find Open Hospitals & Doctors Near You</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Medical Safety Disclaimer */}
+          <div className="p-4 2xl:p-5 bg-slate-50 border border-slate-200/70 rounded-2xl text-center text-xs 2xl:text-sm text-slate-500 leading-relaxed">
+            <p className="font-semibold text-slate-700 mb-0.5">
+              Medical Research Disclaimer
+            </p>
+            <p className="max-w-4xl mx-auto">
+              This symptom assessment is generated for educational and research purposes only. It is not a clinical medical diagnosis. Always consult a qualified healthcare provider regarding symptoms or treatment.
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* FORM VIEW */
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
+          <div className="flex items-center justify-between pb-4 2xl:pb-5 border-b border-slate-100 mb-6 2xl:mb-8">
+            <h2 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono">
+              Describe Your Symptoms
+            </h2>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm 2xl:text-base text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Clear</span>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6 2xl:space-y-8">
+            <div>
+              <label className="block text-xs sm:text-sm 2xl:text-base font-semibold text-[#1E293B] mb-2">
+                Detailed Symptom Description
+              </label>
+              <textarea
+                rows={6}
+                value={symptomsText}
+                onChange={(e) => {
+                  setSymptomsText(e.target.value);
+                  if (errorMsg) setErrorMsg("");
+                }}
+                placeholder="Describe what you are experiencing (e.g. onset, severity, duration, and any accompanying discomfort)..."
+                className={`w-full p-4 2xl:p-5 bg-slate-50/60 rounded-xl border text-sm sm:text-base 2xl:text-lg text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all resize-y font-medium ${
+                  errorMsg
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-slate-300 focus:border-[#0F766E]"
+                }`}
+              />
+              {errorMsg && (
+                <span className="text-xs 2xl:text-sm text-red-600 mt-1.5 block font-medium">
+                  {errorMsg}
+                </span>
+              )}
+            </div>
+
+            {/* Submit Action */}
+            <div className="pt-4 2xl:pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <span className="text-xs 2xl:text-sm text-slate-400">
+                Symptoms are analyzed using structured observational pattern models.
+              </span>
+
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="w-full sm:w-auto px-8 py-3.5 2xl:px-10 2xl:py-4 bg-[#0F2747] hover:bg-[#0A1B33] active:bg-[#071324] text-white font-semibold rounded-xl text-sm sm:text-base 2xl:text-lg transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-[#0F766E] disabled:opacity-70"
+              >
+                {isProcessing ? (
+                  <>
+                    <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+                    <span>Analyzing Symptoms...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Analyze Symptoms</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
