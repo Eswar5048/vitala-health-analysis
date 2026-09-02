@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { BarChart3, PieChart, Info } from "lucide-react";
 
 export default function HealthMeasurementChart({ evaluationResult }) {
@@ -12,8 +12,8 @@ export default function HealthMeasurementChart({ evaluationResult }) {
 
   const { parsedValues, parameterResults } = evaluationResult;
 
-  // 8 Clinical Metrics (Body Temperature in Fahrenheit °F)
-  const chartableMetrics = [
+  // 8 Standard Clinical Metrics (Body Temperature in Fahrenheit °F)
+  const allChartableMetrics = [
     { key: "heartRate", name: "Heart Rate", shortName: "HR", unit: "BPM", min: 40, max: 140, refMin: 60, refMax: 100 },
     { key: "spO2", name: "SpO₂ Saturation", shortName: "SpO₂", unit: "%", min: 80, max: 100, refMin: 95, refMax: 100 },
     { key: "systolicBP", name: "Systolic BP", shortName: "Sys BP", unit: "mmHg", min: 70, max: 180, refMin: 90, refMax: 120 },
@@ -24,22 +24,35 @@ export default function HealthMeasurementChart({ evaluationResult }) {
     { key: "thyroid", name: "Thyroid (TSH)", shortName: "TSH", unit: "µIU/mL", min: 0.1, max: 8.0, refMin: 0.4, refMax: 4.0 },
   ];
 
-  // Calculate Status Counts for the Pie / Donut Chart
+  // Strictly filter to ONLY measurements provided by the user
+  const providedParams = (parameterResults || []).filter(
+    (p) => p.isProvided !== false && p.status !== "Not Provided" && p.key !== "age"
+  );
+  const providedKeys = providedParams.map((p) => p.key);
+
+  const chartableMetrics =
+    providedKeys.length > 0
+      ? allChartableMetrics.filter((m) => providedKeys.includes(m.key))
+      : allChartableMetrics;
+
+  // Calculate Status Counts strictly from the provided parameters
   let normalCount = 0;
   let concerningCount = 0;
   let outsideRangeCount = 0;
 
-  parameterResults.forEach((param) => {
+  const evaluatedParams = providedParams.length > 0 ? providedParams : parameterResults || [];
+
+  evaluatedParams.forEach((param) => {
     if (param.severity === "critical" || param.status === "Outside expected range") {
       outsideRangeCount++;
     } else if (param.severity === "concerning" || param.status === "Concerning") {
       concerningCount++;
-    } else {
+    } else if (param.status !== "Not Provided") {
       normalCount++;
     }
   });
 
-  const totalParams = parameterResults.length || 9;
+  const totalParams = evaluatedParams.length || 1;
   const normalPercent = Math.round((normalCount / totalParams) * 100);
   const concerningPercent = Math.round((concerningCount / totalParams) * 100);
   const outsideRangePercent = Math.round((outsideRangeCount / totalParams) * 100);
@@ -63,10 +76,10 @@ export default function HealthMeasurementChart({ evaluationResult }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 2xl:pb-5 border-b border-slate-100 mb-6 2xl:mb-8 gap-2">
           <div>
             <h3 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono">
-              Parameter Range Analysis
+              Parameter Range Analysis ({chartableMetrics.length} {chartableMetrics.length === 1 ? 'Metric' : 'Metrics'})
             </h3>
             <p className="text-xs sm:text-sm 2xl:text-base text-slate-500 mt-0.5">
-              Interactive visual comparison of entered measurements against standard clinical reference brackets. Hover or click to inspect.
+              Visual comparison of your entered measurements against standard clinical reference brackets.
             </p>
           </div>
 
@@ -214,7 +227,12 @@ export default function HealthMeasurementChart({ evaluationResult }) {
             </div>
 
             {/* Interactive Vertical Comparison Bars */}
-            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-3 2xl:gap-4 items-end h-60 2xl:h-72 pt-3 pb-1 px-1">
+            <div
+              className="grid gap-2 sm:gap-3 2xl:gap-4 items-end h-60 2xl:h-72 pt-3 pb-1 px-1"
+              style={{
+                gridTemplateColumns: `repeat(${chartableMetrics.length}, minmax(0, 1fr))`,
+              }}
+            >
               {chartableMetrics.map((metric) => {
                 const rawVal = parsedValues[metric.key];
                 const paramResult = parameterResults.find((p) => p.key === metric.key);
@@ -249,32 +267,32 @@ export default function HealthMeasurementChart({ evaluationResult }) {
                         severity,
                       })
                     }
+                    onClick={() =>
+                      setSelectedBar({
+                        key: metric.key,
+                        name: metric.name,
+                        value: rawVal,
+                        unit: metric.unit,
+                        refMin: metric.refMin,
+                        refMax: metric.refMax,
+                        status,
+                        severity,
+                      })
+                    }
                     className="flex flex-col items-center h-full justify-end group cursor-pointer"
                   >
-                    <span
-                      className={`text-[10px] 2xl:text-xs font-mono font-bold transition-all ${
-                        isBarActive ? "text-[#0F766E] scale-110" : "text-slate-500 opacity-75 group-hover:opacity-100"
-                      }`}
-                    >
-                      {rawVal}
-                    </span>
-
-                    <div
-                      className={`w-full max-w-[42px] 2xl:max-w-[50px] h-42 2xl:h-52 rounded-t-lg flex items-end overflow-hidden p-0.5 transition-all ${
-                        isBarActive ? "bg-slate-200 ring-2 ring-[#0F766E]/40" : "bg-slate-100"
-                      }`}
-                    >
+                    <div className="w-full flex items-end justify-center h-44 2xl:h-52 bg-slate-100/60 rounded-xl p-1 relative">
                       <div
-                        className={`w-full rounded-t-md ${barColor} transition-all duration-500 ease-out ${
-                          isBarActive ? "brightness-110" : ""
+                        className={`w-full rounded-lg transition-all duration-300 ${barColor} ${
+                          isBarActive ? "ring-2 ring-teal-500 shadow-md scale-102" : "opacity-90 group-hover:opacity-100"
                         }`}
                         style={{ height: `${barHeight}%` }}
                       ></div>
                     </div>
 
                     <span
-                      className={`text-[10px] 2xl:text-xs font-mono mt-2 truncate max-w-[50px] 2xl:max-w-[60px] text-center font-semibold transition-colors ${
-                        isBarActive ? "text-[#0F2747]" : "text-slate-500"
+                      className={`text-[10px] sm:text-xs font-mono mt-2 transition-colors truncate max-w-full text-center ${
+                        isBarActive ? "font-bold text-[#0F766E]" : "text-slate-500 group-hover:text-[#0F2747]"
                       }`}
                     >
                       {metric.shortName}
@@ -285,194 +303,196 @@ export default function HealthMeasurementChart({ evaluationResult }) {
             </div>
           </div>
 
-          <div className="pt-4 2xl:pt-5 border-t border-slate-100 text-xs 2xl:text-sm text-slate-400 flex items-center justify-between font-mono">
-            <span>Scale: Variance Ratio</span>
-            <span>{chartableMetrics.length} Metrics Measured</span>
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] 2xl:text-xs text-slate-400 font-mono">
+            <span>Bars normalized against optimal median</span>
+            <span>{chartableMetrics.length} metrics charted</span>
           </div>
         </div>
 
-        {/* Right Column: Interactive Parameter Health Distribution Donut Chart */}
+        {/* Right Column: Interactive Physiological Status Donut Chart */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-4 2xl:pb-5 border-b border-slate-100 mb-5 2xl:mb-6">
               <div className="flex items-center gap-2 2xl:gap-2.5">
                 <PieChart className="w-4 h-4 2xl:w-5 2xl:h-5 text-[#0F766E]" />
                 <h3 className="text-sm 2xl:text-base font-bold text-[#0F2747] uppercase tracking-wide font-mono">
-                  Parameter Status Distribution
+                  Status Distribution Breakdown
                 </h3>
               </div>
-              <span className="text-[11px] 2xl:text-xs text-slate-400 font-mono">9 Evaluated</span>
+              <span className="text-[11px] 2xl:text-xs text-slate-400 font-mono">Interactive Segment Donut</span>
             </div>
 
-            {/* Interactive SVG Donut / Pie Chart */}
+            {/* Donut Chart & Legend Row */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 2xl:gap-8 py-2">
-              <div className="relative w-48 h-48 2xl:w-56 2xl:h-56 flex items-center justify-center flex-shrink-0">
-                <svg className="w-full h-full transform -rotate-90 cursor-pointer" viewBox="0 0 100 100">
+              {/* SVG Donut Graphic */}
+              <div className="relative w-44 h-44 2xl:w-52 2xl:h-52 flex-shrink-0">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  {/* Background Ring */}
                   <circle
                     cx="50"
                     cy="50"
                     r={radius}
-                    fill="none"
-                    stroke="#F1F5F9"
-                    strokeWidth="14"
+                    className="text-slate-100"
+                    strokeWidth="12"
+                    stroke="currentColor"
+                    fill="transparent"
                   />
 
-                  {/* Normal Segment */}
+                  {/* Normal Segment (Emerald) */}
                   {normalCount > 0 && (
                     <circle
                       cx="50"
                       cy="50"
                       r={radius}
-                      fill="none"
-                      stroke="#16A34A"
-                      strokeWidth={hoveredSlice === "normal" ? "18" : "14"}
+                      stroke="#10B981"
+                      strokeWidth={hoveredSlice === "normal" ? "14" : "12"}
                       strokeDasharray={`${normalStroke} ${circumference}`}
                       strokeDashoffset={normalOffset}
+                      strokeLinecap="round"
+                      fill="transparent"
+                      className="transition-all duration-300 cursor-pointer"
                       onMouseEnter={() => setHoveredSlice("normal")}
                       onMouseLeave={() => setHoveredSlice(null)}
-                      className="transition-all duration-300 hover:brightness-110"
                     />
                   )}
 
-                  {/* Concerning Segment */}
+                  {/* Concerning Segment (Amber) */}
                   {concerningCount > 0 && (
                     <circle
                       cx="50"
                       cy="50"
                       r={radius}
-                      fill="none"
-                      stroke="#D97706"
-                      strokeWidth={hoveredSlice === "concerning" ? "18" : "14"}
+                      stroke="#F59E0B"
+                      strokeWidth={hoveredSlice === "concerning" ? "14" : "12"}
                       strokeDasharray={`${concerningStroke} ${circumference}`}
                       strokeDashoffset={concerningOffset}
+                      strokeLinecap="round"
+                      fill="transparent"
+                      className="transition-all duration-300 cursor-pointer"
                       onMouseEnter={() => setHoveredSlice("concerning")}
                       onMouseLeave={() => setHoveredSlice(null)}
-                      className="transition-all duration-300 hover:brightness-110"
                     />
                   )}
 
-                  {/* Outside Range Segment */}
+                  {/* Outside Range Segment (Rose) */}
                   {outsideRangeCount > 0 && (
                     <circle
                       cx="50"
                       cy="50"
                       r={radius}
-                      fill="none"
-                      stroke="#DC2626"
-                      strokeWidth={hoveredSlice === "outside" ? "18" : "14"}
+                      stroke="#E11D48"
+                      strokeWidth={hoveredSlice === "outside" ? "14" : "12"}
                       strokeDasharray={`${outsideStroke} ${circumference}`}
                       strokeDashoffset={outsideOffset}
+                      strokeLinecap="round"
+                      fill="transparent"
+                      className="transition-all duration-300 cursor-pointer"
                       onMouseEnter={() => setHoveredSlice("outside")}
                       onMouseLeave={() => setHoveredSlice(null)}
-                      className="transition-all duration-300 hover:brightness-110"
                     />
                   )}
                 </svg>
 
-                {/* Dynamic Center Ratio based on hover */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none transition-all">
-                  {hoveredSlice === "normal" ? (
-                    <>
-                      <span className="font-brand text-xl 2xl:text-2xl font-bold text-emerald-700 leading-none">
-                        {normalCount}/{totalParams}
+                {/* Donut Center Display */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                  {hoveredSlice ? (
+                    <div className="animate-fadeIn">
+                      <span className="text-xl 2xl:text-2xl font-bold font-mono text-[#0F2747]">
+                        {hoveredSlice === "normal"
+                          ? `${normalPercent}%`
+                          : hoveredSlice === "concerning"
+                          ? `${concerningPercent}%`
+                          : `${outsideRangePercent}%`}
                       </span>
-                      <span className="text-[10px] 2xl:text-xs text-emerald-600 font-mono mt-0.5">
-                        Normal ({normalPercent}%)
+                      <span className="block text-[10px] 2xl:text-xs text-slate-500 uppercase font-mono mt-0.5">
+                        {hoveredSlice === "normal"
+                          ? "Normal"
+                          : hoveredSlice === "concerning"
+                          ? "Concerning"
+                          : "Outside"}
                       </span>
-                    </>
-                  ) : hoveredSlice === "concerning" ? (
-                    <>
-                      <span className="font-brand text-xl 2xl:text-2xl font-bold text-amber-700 leading-none">
-                        {concerningCount}/{totalParams}
-                      </span>
-                      <span className="text-[10px] 2xl:text-xs text-amber-600 font-mono mt-0.5">
-                        Concerning ({concerningPercent}%)
-                      </span>
-                    </>
-                  ) : hoveredSlice === "outside" ? (
-                    <>
-                      <span className="font-brand text-xl 2xl:text-2xl font-bold text-red-700 leading-none">
-                        {outsideRangeCount}/{totalParams}
-                      </span>
-                      <span className="text-[10px] 2xl:text-xs text-red-600 font-mono mt-0.5">
-                        Outside ({outsideRangePercent}%)
-                      </span>
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      <span className="font-brand text-lg 2xl:text-xl font-bold text-[#0F2747] leading-none">
-                        {normalCount}/{totalParams}
+                    <div>
+                      <span className="text-xl 2xl:text-2xl font-bold font-brand text-[#0F2747]">
+                        {totalParams}
                       </span>
-                      <span className="text-[10px] 2xl:text-xs text-slate-400 font-mono mt-0.5">
-                        Normal
+                      <span className="block text-[10px] 2xl:text-xs text-slate-400 uppercase font-mono mt-0.5">
+                        Parameters
                       </span>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Status Breakdown Legend */}
-              <div className="space-y-2.5 2xl:space-y-3 w-full sm:w-auto">
+              {/* Status Segment Legend Cards */}
+              <div className="space-y-2.5 w-full sm:w-auto">
+                {/* Normal Card */}
                 <div
                   onMouseEnter={() => setHoveredSlice("normal")}
                   onMouseLeave={() => setHoveredSlice(null)}
-                  className={`flex items-center justify-between gap-4 2xl:gap-6 p-2.5 2xl:p-3 rounded-xl border transition-all cursor-pointer ${
+                  className={`p-2.5 2xl:p-3 rounded-xl border flex items-center justify-between gap-4 cursor-pointer transition-all ${
                     hoveredSlice === "normal"
-                      ? "bg-emerald-100/80 border-emerald-300 shadow-xs"
-                      : "bg-emerald-50/60 border-emerald-100 hover:bg-emerald-100/50"
+                      ? "bg-emerald-50/80 border-emerald-300 shadow-2xs"
+                      : "bg-slate-50/70 border-slate-200/70 hover:bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-center gap-2 2xl:gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#16A34A]"></span>
-                    <span className="text-xs 2xl:text-sm font-semibold text-emerald-900">Normal</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                    <span className="text-xs 2xl:text-sm font-semibold text-[#1E293B]">Normal Range</span>
                   </div>
-                  <span className="text-xs 2xl:text-sm font-bold font-mono text-emerald-800">
-                    {normalCount} ({normalPercent}%)
-                  </span>
+                  <div className="text-right font-mono">
+                    <span className="text-xs 2xl:text-sm font-bold text-[#0F2747]">{normalCount}</span>
+                    <span className="text-[10px] 2xl:text-xs text-slate-400 ml-1.5">({normalPercent}%)</span>
+                  </div>
                 </div>
 
+                {/* Concerning Card */}
                 <div
                   onMouseEnter={() => setHoveredSlice("concerning")}
                   onMouseLeave={() => setHoveredSlice(null)}
-                  className={`flex items-center justify-between gap-4 2xl:gap-6 p-2.5 2xl:p-3 rounded-xl border transition-all cursor-pointer ${
+                  className={`p-2.5 2xl:p-3 rounded-xl border flex items-center justify-between gap-4 cursor-pointer transition-all ${
                     hoveredSlice === "concerning"
-                      ? "bg-amber-100/80 border-amber-300 shadow-xs"
-                      : "bg-amber-50/60 border-amber-100 hover:bg-amber-100/50"
+                      ? "bg-amber-50/80 border-amber-300 shadow-2xs"
+                      : "bg-slate-50/70 border-slate-200/70 hover:bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-center gap-2 2xl:gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#D97706]"></span>
-                    <span className="text-xs 2xl:text-sm font-semibold text-amber-900">Concerning</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-amber-500 flex-shrink-0"></span>
+                    <span className="text-xs 2xl:text-sm font-semibold text-[#1E293B]">Concerning</span>
                   </div>
-                  <span className="text-xs 2xl:text-sm font-bold font-mono text-amber-800">
-                    {concerningCount} ({concerningPercent}%)
-                  </span>
+                  <div className="text-right font-mono">
+                    <span className="text-xs 2xl:text-sm font-bold text-[#0F2747]">{concerningCount}</span>
+                    <span className="text-[10px] 2xl:text-xs text-slate-400 ml-1.5">({concerningPercent}%)</span>
+                  </div>
                 </div>
 
+                {/* Outside Range Card */}
                 <div
                   onMouseEnter={() => setHoveredSlice("outside")}
                   onMouseLeave={() => setHoveredSlice(null)}
-                  className={`flex items-center justify-between gap-4 2xl:gap-6 p-2.5 2xl:p-3 rounded-xl border transition-all cursor-pointer ${
+                  className={`p-2.5 2xl:p-3 rounded-xl border flex items-center justify-between gap-4 cursor-pointer transition-all ${
                     hoveredSlice === "outside"
-                      ? "bg-red-100/80 border-red-300 shadow-xs"
-                      : "bg-red-50/60 border-red-100 hover:bg-red-100/50"
+                      ? "bg-rose-50/80 border-rose-300 shadow-2xs"
+                      : "bg-slate-50/70 border-slate-200/70 hover:bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-center gap-2 2xl:gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#DC2626]"></span>
-                    <span className="text-xs 2xl:text-sm font-semibold text-red-900">Outside Range</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-rose-600 flex-shrink-0"></span>
+                    <span className="text-xs 2xl:text-sm font-semibold text-[#1E293B]">Outside Range</span>
                   </div>
-                  <span className="text-xs 2xl:text-sm font-bold font-mono text-red-800">
-                    {outsideRangeCount} ({outsideRangePercent}%)
-                  </span>
+                  <div className="text-right font-mono">
+                    <span className="text-xs 2xl:text-sm font-bold text-[#0F2747]">{outsideRangeCount}</span>
+                    <span className="text-[10px] 2xl:text-xs text-slate-400 ml-1.5">({outsideRangePercent}%)</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="pt-4 2xl:pt-5 border-t border-slate-100 text-xs 2xl:text-sm text-slate-400 flex items-center justify-between font-mono">
-            <span>Composition Breakdown</span>
-            <span className="font-semibold text-[#0F766E]">{normalPercent}% Optimal</span>
+          <div className="pt-3 border-t border-slate-100 text-[11px] 2xl:text-xs text-slate-400 font-mono flex items-center justify-between">
+            <span>Hover slices to inspect proportion</span>
+            <span>100% Total Coverage</span>
           </div>
         </div>
       </div>

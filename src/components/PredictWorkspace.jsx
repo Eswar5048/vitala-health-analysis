@@ -127,7 +127,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
               Predict
             </h1>
             <p className="text-sm sm:text-base 2xl:text-lg text-slate-500 mt-1.5 max-w-3xl leading-relaxed">
-              Enter any measurements you have available. Missing values will automatically use standard reference baselines without penalizing your score.
+              Enter your health measurements to analyze physiological indicators and compute your overall health index.
             </p>
           </div>
 
@@ -318,12 +318,9 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
           {/* Form Header */}
           <div className="flex items-center justify-between pb-4 2xl:pb-5 border-b border-slate-100 mb-6 2xl:mb-8">
-            <div>
-              <h2 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono">
-                Health Measurements Intake (Flexible)
-              </h2>
-              <span className="text-xs text-slate-400">Fill what you know — unmeasured fields use standard healthy baselines</span>
-            </div>
+            <h2 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono">
+              Health Measurements Intake
+            </h2>
             <button
               type="button"
               onClick={handleReset}
@@ -619,7 +616,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
             {/* Submit Action */}
             <div className="pt-5 2xl:pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <span className="text-xs 2xl:text-sm text-slate-500 font-medium">
-                💡 Flexible Intake: Enter any measurements you have. Omitted parameters automatically use baseline physiological standards.
+                Entered parameters are evaluated against clinical physiological reference ranges.
               </span>
 
               <button
