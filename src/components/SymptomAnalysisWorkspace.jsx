@@ -343,7 +343,7 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
                   setSymptomsText(e.target.value);
                   if (errorMsg) setErrorMsg("");
                 }}
-                placeholder="Describe what you are experiencing (e.g., started yesterday with fever, dry cough, and mild throat irritation)..."
+                placeholder="Describe what you are experiencing..."
                 className={`w-full p-4 2xl:p-5 bg-slate-50/60 rounded-xl border text-sm sm:text-base 2xl:text-lg text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all resize-y font-medium ${
                   errorMsg
                     ? "border-red-500 focus:border-red-500"
@@ -413,7 +413,7 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
                 type="text"
                 value={additionalNotes}
                 onChange={(e) => setAdditionalNotes(e.target.value)}
-                placeholder="e.g. Asthma, High BP, Diabetes, taking medications (optional)..."
+                placeholder="Enter any existing medical conditions or notes (optional)..."
                 className="w-full p-3 bg-slate-50/60 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none"
               />
             </div>

@@ -354,7 +354,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="1"
                     max="120"
-                    placeholder="e.g. 35"
                     value={formData.age}
                     onChange={(e) => handleFieldChange("age", e.target.value)}
                     className={`w-full pl-4 pr-16 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -385,7 +384,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="30"
                     max="240"
-                    placeholder="e.g. 72"
                     value={formData.heartRate}
                     onChange={(e) => handleFieldChange("heartRate", e.target.value)}
                     className={`w-full pl-4 pr-16 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -416,7 +414,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="60"
                     max="260"
-                    placeholder="e.g. 120"
                     value={formData.systolicBP}
                     onChange={(e) => handleFieldChange("systolicBP", e.target.value)}
                     className={`w-full pl-4 pr-18 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -447,7 +444,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="40"
                     max="160"
-                    placeholder="e.g. 80"
                     value={formData.diastolicBP}
                     onChange={(e) => handleFieldChange("diastolicBP", e.target.value)}
                     className={`w-full pl-4 pr-18 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -479,7 +475,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     step="0.1"
                     min="88.0"
                     max="112.0"
-                    placeholder="e.g. 98.6"
                     value={formData.bodyTemp}
                     onChange={(e) => handleFieldChange("bodyTemp", e.target.value)}
                     className={`w-full pl-4 pr-14 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -510,7 +505,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="50"
                     max="100"
-                    placeholder="e.g. 98"
                     value={formData.spO2}
                     onChange={(e) => handleFieldChange("spO2", e.target.value)}
                     className={`w-full pl-4 pr-14 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -541,7 +535,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="6"
                     max="60"
-                    placeholder="e.g. 16"
                     value={formData.respiratoryRate}
                     onChange={(e) => handleFieldChange("respiratoryRate", e.target.value)}
                     className={`w-full pl-4 pr-32 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -572,7 +565,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="30"
                     max="600"
-                    placeholder="e.g. 95"
                     value={formData.bloodGlucose}
                     onChange={(e) => handleFieldChange("bloodGlucose", e.target.value)}
                     className={`w-full pl-4 pr-18 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -604,7 +596,6 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     step="0.01"
                     min="0.05"
                     max="50.0"
-                    placeholder="e.g. 1.8"
                     value={formData.thyroid}
                     onChange={(e) => handleFieldChange("thyroid", e.target.value)}
                     className={`w-full pl-4 pr-20 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
