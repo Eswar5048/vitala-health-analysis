@@ -51,7 +51,7 @@ export default function MainDashboard({ session, onSignOut, onUpdateSession }) {
       {/* Subtle Healthcare Footer */}
       <footer className="w-full py-6 border-t border-slate-200/60 bg-white text-center text-xs sm:text-sm text-slate-400">
         <div className="max-w-[1600px] 2xl:max-w-[1760px] mx-auto px-5 sm:px-8 lg:px-12 2xl:px-16 flex items-center justify-between">
-          <span className="font-brand font-bold text-slate-600">Vitala</span>
+          <span className="font-brand font-bold text-slate-600">Vital</span>
           <span>Health Analysis Platform</span>
         </div>
       </footer>

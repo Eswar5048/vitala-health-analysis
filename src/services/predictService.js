@@ -1,7 +1,7 @@
 ﻿import { evaluateHealthMeasurements } from "./predictEngine";
 
 /**
- * Vitala Predict Service
+ * Vital Predict Service
  * Client communication service with backend Predict endpoint (/api/analyze-health-measurements).
  * Automatically ensures full parsedValues and chartable parameter results.
  */

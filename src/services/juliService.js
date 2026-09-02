@@ -1,5 +1,5 @@
 ﻿/**
- * Vitala Juli Assistant Service
+ * Vital Juli Assistant Service
  * Client communication service with backend Juli endpoint (/api/juli-chat).
  * Uses GEMINI_JULI_API_KEY securely configured on backend.
  */

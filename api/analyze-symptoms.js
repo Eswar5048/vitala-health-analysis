@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     let analysisData = null;
 
     if (healthApiKey && healthApiKey.trim().length > 0) {
-      const prompt = `You are a clinical educational symptom assessment engine for Vitala.
+      const prompt = `You are a clinical educational symptom assessment engine for Vital.
 Analyze the user-reported symptoms for clinical guidance.
 CRITICAL INSTRUCTIONS:
 - Keep all explanations short, crisp, and direct to the point (no long essay paragraphs).

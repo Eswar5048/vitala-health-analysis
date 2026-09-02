@@ -1,6 +1,6 @@
-﻿# Vitala — Clinical Physiological Health Analysis Platform
+﻿# Vital — Clinical Physiological Health Analysis Platform
 
-Vitala is a next-generation clinical physiological health evaluation and diagnostics intelligence platform designed to analyze vitals, symptoms, live medical facilities, and longitudinal health activity.
+Vital is a next-generation clinical physiological health evaluation and diagnostics intelligence platform designed to analyze vitals, symptoms, live medical facilities, and longitudinal health activity.
 
 ---
 
@@ -38,10 +38,10 @@ Vitala is a next-generation clinical physiological health evaluation and diagnos
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/Eswar5048/vitala-health-analysis.git
+git clone https://github.com/Eswar5048/vital-health-analysis.git
 
 # Navigate into project directory
-cd vitala-health-analysis
+cd vital-health-analysis
 
 # Install dependencies
 npm install

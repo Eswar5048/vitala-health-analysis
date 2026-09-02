@@ -246,7 +246,7 @@ export default async function handler(req, res) {
     let assessmentData = null;
 
     if (healthApiKey && healthApiKey.trim().length > 0) {
-      const prompt = `You are the clinical physiological assessment engine for Vitala.
+      const prompt = `You are the clinical physiological assessment engine for Vital.
 Analyze the following patient health measurements (Body Temperature is in Fahrenheit °F):
 ${JSON.stringify(measurements, null, 2)}
 

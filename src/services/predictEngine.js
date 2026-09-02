@@ -1,5 +1,5 @@
 ﻿/**
- * Vitala Health Prediction & Risk Assessment Engine
+ * Vital Health Prediction & Risk Assessment Engine
  * Modular business logic for multi-parameter physiological analysis.
  * Uses Fahrenheit (°F) for Body Temperature.
  */

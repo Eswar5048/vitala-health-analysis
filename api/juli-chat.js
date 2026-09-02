@@ -14,7 +14,7 @@
     let replyText = '';
 
     if (juliApiKey && juliApiKey.trim().length > 0) {
-      const systemInstruction = `You are Juli, an ultra-concise clinical physiological health assistant for the Vitala platform.
+      const systemInstruction = `You are Juli, an ultra-concise clinical physiological health assistant for the Vital platform.
 
 CORE PRINCIPLE:
 Give only the direct main matter immediately. Maximum 35 words total.

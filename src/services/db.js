@@ -1,14 +1,14 @@
 /**
- * Vitala Local Database Service
+ * Vital Local Database Service
  * Provides structured, segregated, and secure member data storage using browser persistent store.
  * Built with async promise API for 1-to-1 drop-in compatibility with Cloud databases (Supabase / Firebase).
  */
 
 const STORAGE_KEYS = {
-  MEMBERS: "vitala_db_members",
-  SESSIONS: "vitala_db_sessions",
-  AUDIT_LOGS: "vitala_db_audit_logs",
-  USER_HISTORY: "vitala_db_user_history",
+  MEMBERS: "vital_db_members",
+  SESSIONS: "vital_db_sessions",
+  AUDIT_LOGS: "vital_db_audit_logs",
+  USER_HISTORY: "vital_db_user_history",
 };
 
 // Simple secure hash function for local credential storage
@@ -19,7 +19,7 @@ function hashPassword(password) {
     hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
-  return `vtl_hsh_${Math.abs(hash)}_${btoa(password.slice(0, 3) + "vitala")}`;
+  return `vtl_hsh_${Math.abs(hash)}_${btoa(password.slice(0, 3) + "vital")}`;
 }
 
 // Generate unique identifier
@@ -33,7 +33,7 @@ function getCollection(key) {
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
   } catch (err) {
-    console.error(`[Vitala DB] Error loading collection ${key}:`, err);
+    console.error(`[Vital DB] Error loading collection ${key}:`, err);
     return [];
   }
 }
@@ -43,7 +43,7 @@ function saveCollection(key, data) {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err) {
-    console.error(`[Vitala DB] Error saving collection ${key}:`, err);
+    console.error(`[Vital DB] Error saving collection ${key}:`, err);
   }
 }
 
@@ -71,8 +71,8 @@ export function initializeDatabase() {
     const defaultOperator = {
       id: generateUUID(),
       fullName: "Health Member",
-      email: "member@vitala.health",
-      passwordHash: hashPassword("vitala123"),
+      email: "member@vital.health",
+      passwordHash: hashPassword("vital123"),
       role: "member",
       status: "active",
       metadata: {

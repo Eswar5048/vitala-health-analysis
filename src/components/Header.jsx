@@ -46,7 +46,7 @@ export default function Header({ session, onSignOut, onUpdateSession }) {
             <div className="flex items-center gap-3.5 2xl:gap-4">
               <Logo className="w-10 h-10 2xl:w-11 2xl:h-11" size={44} />
               <span className="font-brand text-2xl 2xl:text-3xl font-bold text-[#0F2747] tracking-tight leading-tight">
-                Vitala
+                Vital
               </span>
             </div>
 

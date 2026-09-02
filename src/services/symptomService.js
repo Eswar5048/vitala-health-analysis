@@ -1,5 +1,5 @@
 ﻿/**
- * Vitala Symptom Analysis Service
+ * Vital Symptom Analysis Service
  * Communicates securely with backend API layer (/api/analyze-symptoms)
  * Features built-in resilience and client-side fallback parsing.
  */

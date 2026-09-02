@@ -1,5 +1,5 @@
 ﻿/**
- * Vitala Nearby Care & Medical Facilities Service
+ * Vital Nearby Care & Medical Facilities Service
  * Handles browser geolocation and backend API calls for real-time hospitals and doctors.
  */
 

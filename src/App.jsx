@@ -46,8 +46,8 @@ export default function App() {
     });
   };
 
-  const brandLetters = ["V", "I", "T", "A", "L", "A"];
-  const letterDelays = ["0.35s", "0.85s", "1.35s", "1.85s", "2.35s", "2.85s"];
+  const brandLetters = ["V", "I", "T", "A", "L"];
+  const letterDelays = ["0.35s", "0.85s", "1.35s", "1.85s", "2.35s"];
 
   return (
     <div className="min-h-screen bg-[#08162B] text-[#1E293B] flex flex-col justify-between selection:bg-teal-100 selection:text-teal-900 relative overflow-hidden">
@@ -117,7 +117,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Top Header Watermark: Pure White Vitala on Top-Left */}
+          {/* Top Header Watermark: Pure White Vital on Top-Left */}
           <header
             className={`relative z-20 w-full px-6 sm:px-10 py-6 flex items-center justify-between transition-all duration-700 ease-out ${
               isIntroActive
@@ -128,7 +128,7 @@ export default function App() {
             <div className="flex items-center gap-3 group cursor-pointer">
               <Logo className="w-10 h-10" size={40} />
               <span className="font-brand text-2xl font-extrabold text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-                Vitala
+                Vital
               </span>
             </div>
           </header>
@@ -149,9 +149,9 @@ export default function App() {
                   <Logo className="w-16 h-16" size={64} />
                 </div>
 
-                {/* Bold Vitala Title */}
+                {/* Bold Vital Title */}
                 <h1 className="font-brand text-3xl sm:text-4xl font-extrabold text-[#0F2747] tracking-tight leading-none mb-1.5">
-                  Vitala
+                  Vital
                 </h1>
 
                 {/* Form Component (Handles Sign In & Sign Up Modes) */}
@@ -178,7 +178,7 @@ export default function App() {
               isIntroActive ? "opacity-0 pointer-events-none" : "opacity-100"
             }`}
           >
-            <span className="font-brand text-xs font-bold tracking-tight text-slate-300">Vitala</span>
+            <span className="font-brand text-xs font-bold tracking-tight text-slate-300">Vital</span>
           </footer>
         </>
       )}

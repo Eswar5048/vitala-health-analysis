@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 /**
- * Vitala Backend Proxy Plugin
+ * Vital Backend Proxy Plugin
  * Handles server-side communication with Gemini APIs.
  * 
  * Strict Key Architecture:
@@ -13,9 +13,9 @@ import tailwindcss from '@tailwindcss/vite'
  * Temperature Unit: Fahrenheit (°F)
  * Model: gemini-3.6-flash
  */
-function vitalaBackendPlugin() {
+function vitalBackendPlugin() {
   return {
-    name: 'vitala-backend-proxy',
+    name: 'vital-backend-proxy',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const env = loadEnv('', process.cwd(), '');
@@ -42,7 +42,7 @@ function vitalaBackendPlugin() {
             let assessmentData;
 
             if (healthApiKey && healthApiKey.trim().length > 0) {
-              const prompt = `You are the clinical physiological assessment engine for Vitala.
+              const prompt = `You are the clinical physiological assessment engine for Vital.
 Analyze the following patient health measurements (Body Temperature is in Fahrenheit °F):
 ${JSON.stringify(measurements, null, 2)}
 
@@ -157,7 +157,7 @@ OUTPUT MUST BE VALID JSON MATCHING THIS EXACT SCHEMA:
             let analysisData;
 
             if (healthApiKey && healthApiKey.trim().length > 0) {
-              const systemPrompt = `You are a clinical educational symptom assessment engine for Vitala.
+              const systemPrompt = `You are a clinical educational symptom assessment engine for Vital.
 Analyze the user-reported symptoms for research and educational purposes.
 CRITICAL INSTRUCTIONS:
 - Keep all explanations short, crisp, and direct to the point (no long essay paragraphs).
@@ -253,7 +253,7 @@ CRITICAL INSTRUCTIONS:
             let replyText;
 
             if (juliApiKey && juliApiKey.trim().length > 0) {
-              const systemInstruction = `You are Juli, the ultra-concise health assistant at Vitala.
+              const systemInstruction = `You are Juli, the ultra-concise health assistant at Vital.
 STRICT RESPONSE RULES:
 - Output maximum 2 short bullet points (or 1-2 direct sentences) TOTAL.
 - State ONLY the core definition and normal reference range.
@@ -635,7 +635,7 @@ async function fetchRealNearbyFacilities({ latitude, longitude, queryLocation, c
     if (queryLocation && queryLocation.trim().length > 0) {
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryLocation.trim())}&format=json&limit=1`,
-        { headers: { 'User-Agent': 'VitalaHealthApp/1.0' } }
+        { headers: { 'User-Agent': 'VitalHealthApp/1.0' } }
       );
       if (geoRes.ok) {
         const geoList = await geoRes.json();
@@ -648,7 +648,7 @@ async function fetchRealNearbyFacilities({ latitude, longitude, queryLocation, c
     } else if (latitude && longitude) {
       const revRes = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-        { headers: { 'User-Agent': 'VitalaHealthApp/1.0' } }
+        { headers: { 'User-Agent': 'VitalHealthApp/1.0' } }
       );
       if (revRes.ok) {
         const revData = await revRes.json();
@@ -685,7 +685,7 @@ out center 15;`;
     const opRes = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       body: overpassQuery,
-      headers: { 'User-Agent': 'VitalaHealthApp/1.0' },
+      headers: { 'User-Agent': 'VitalHealthApp/1.0' },
     });
 
     if (opRes.ok) {
@@ -837,6 +837,6 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    vitalaBackendPlugin(),
+    vitalBackendPlugin(),
   ],
 })

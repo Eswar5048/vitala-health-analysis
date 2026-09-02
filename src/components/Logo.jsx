@@ -5,7 +5,7 @@ export default function Logo({ className = "w-11 h-11", size = 44 }) {
     <div
       className={`relative inline-flex items-center justify-center flex-shrink-0 group cursor-pointer transition-transform duration-300 hover:scale-105 ${className}`}
       style={{ width: `${size}px`, height: `${size}px` }}
-      aria-label="Vitala Brand Logo"
+      aria-label="Vital Brand Logo"
     >
       <svg
         width={size}
@@ -17,15 +17,15 @@ export default function Logo({ className = "w-11 h-11", size = 44 }) {
       >
         {/* Dynamic Glow Filter */}
         <defs>
-          <filter id="vitala-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id="vital-glow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#14B8A6" floodOpacity="0.5" />
           </filter>
-          <linearGradient id="vitala-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id="vital-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#2DD4BF" />
             <stop offset="50%" stopColor="#0F766E" />
             <stop offset="100%" stopColor="#14B8A6" />
           </linearGradient>
-          <linearGradient id="vitala-grad-2" x1="100%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id="vital-grad-2" x1="100%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#14B8A6" />
             <stop offset="100%" stopColor="#2DD4BF" />
           </linearGradient>
@@ -49,22 +49,22 @@ export default function Logo({ className = "w-11 h-11", size = 44 }) {
         {/* Dynamic Interlocking Medical Ribbon Path 1 (Top-Left to Bottom-Right Loop) */}
         <path
           d="M33 50 C33 41, 41 33, 50 33 C59 33, 59 41, 59 50 C59 59, 50 67, 41 67 C33 67, 33 59, 33 50 Z"
-          stroke="url(#vitala-grad-1)"
+          stroke="url(#vital-grad-1)"
           strokeWidth="4.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#vitala-glow)"
+          filter="url(#vital-glow)"
           className="transition-all duration-500 group-hover:stroke-[#2DD4BF]"
         />
 
         {/* Dynamic Interlocking Medical Ribbon Path 2 (Top-Right / Outer Fluid Organic Cross Wave) */}
         <path
           d="M50 25 C41 25, 41 41, 30 41 C22 41, 22 50, 30 50 C41 50, 41 67, 50 75 C59 75, 59 59, 70 59 C78 59, 78 50, 70 50 C59 50, 59 33, 50 25 Z"
-          stroke="url(#vitala-grad-2)"
+          stroke="url(#vital-grad-2)"
           strokeWidth="4.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#vitala-glow)"
+          filter="url(#vital-glow)"
           className="transition-all duration-500 group-hover:stroke-[#14B8A6]"
         />
 

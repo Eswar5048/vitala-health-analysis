@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     try {
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
-        { headers: { 'User-Agent': 'VitalaHealthApp/1.0' } }
+        { headers: { 'User-Agent': 'VitalHealthApp/1.0' } }
       );
       if (geoRes.ok) {
         const geoData = await geoRes.json();
