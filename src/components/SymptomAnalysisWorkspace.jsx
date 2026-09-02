@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   Stethoscope,
   Send,
@@ -7,23 +7,68 @@ import {
   RefreshCw,
   ArrowLeft,
   ShieldAlert,
-  Info,
   ListChecks,
   MapPin,
+  Clock,
+  Activity,
+  PlusCircle,
+  FileText,
+  UserCheck,
 } from "lucide-react";
 import { analyzeSymptomsWithGemini } from "../services/symptomService";
 import { recordUserActivity } from "../services/db";
 
+const COMMON_SYMPTOM_TAGS = [
+  "Fever / Chills",
+  "Headache",
+  "Dry Cough",
+  "Sore Throat",
+  "Fatigue & Weakness",
+  "Body Aches",
+  "Nausea / Queasiness",
+  "Dizziness",
+  "Chest Tightness",
+  "Shortness of Breath",
+  "Stomach Pain",
+  "Nasal Congestion",
+];
+
+const DURATION_OPTIONS = [
+  "Under 24 hours (Acute onset)",
+  "1–3 days",
+  "4–7 days (About a week)",
+  "1–2 weeks",
+  "More than 2 weeks (Persistent)",
+];
+
+const SEVERITY_LEVELS = [
+  { label: "Mild", desc: "Manageable, minimal disruption", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  { label: "Moderate", desc: "Uncomfortable, slowing me down", color: "text-amber-700 bg-amber-50 border-amber-200" },
+  { label: "Severe", desc: "Intense, impacting daily tasks", color: "text-rose-700 bg-rose-50 border-rose-200" },
+];
+
 export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) {
   const [symptomsText, setSymptomsText] = useState("");
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [duration, setDuration] = useState(DURATION_OPTIONS[1]);
+  const [severity, setSeverity] = useState("Mild");
+  const [additionalNotes, setAdditionalNotes] = useState("");
+
   const [errorMsg, setErrorMsg] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
 
+  const toggleTag = (tag) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+    if (errorMsg) setErrorMsg("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!symptomsText || symptomsText.trim().length === 0) {
-      setErrorMsg("Please describe your symptoms to proceed with the analysis.");
+    if (!symptomsText.trim() && selectedTags.length === 0) {
+      setErrorMsg("Please select at least one symptom tag or describe what you are experiencing.");
       return;
     }
 
@@ -31,15 +76,23 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
     setIsProcessing(true);
 
     try {
-      const data = await analyzeSymptomsWithGemini(symptomsText);
+      const payload = {
+        symptoms: symptomsText.trim(),
+        tags: selectedTags,
+        duration,
+        severity,
+        additionalContext: additionalNotes.trim(),
+      };
+
+      const data = await analyzeSymptomsWithGemini(payload);
       setAnalysisResult(data);
       recordUserActivity({
         email: session?.email,
         type: "symptom",
-        title: `Symptom Check: "${data.summary || symptomsText.slice(0, 40)}"`,
+        title: `Symptom Check: "${data.summary || symptomsText.slice(0, 40) || selectedTags.join(', ')}"`,
         summary: data.clinicalExplanation,
-        riskLevel: data.urgencyLevel || "Routine",
-        riskColor: data.urgencyLevel?.toLowerCase().includes("attention") ? "#DC2626" : "#0F766E",
+        riskLevel: data.urgencyLevel || "Routine Care",
+        riskColor: data.urgencyColor || (data.urgencyLevel?.toLowerCase().includes("attention") ? "#DC2626" : "#0F766E"),
         data,
       });
     } catch (err) {
@@ -51,6 +104,10 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
 
   const handleReset = () => {
     setSymptomsText("");
+    setSelectedTags([]);
+    setDuration(DURATION_OPTIONS[1]);
+    setSeverity("Mild");
+    setAdditionalNotes("");
     setErrorMsg("");
     setAnalysisResult(null);
   };
@@ -61,13 +118,13 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
       <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-teal-50 text-[#0F766E] text-xs 2xl:text-sm font-bold font-mono uppercase mb-3 border border-teal-100">
           <Stethoscope className="w-4 h-4" />
-          <span>Secondary Health Feature</span>
+          <span>Clinical Observation Intake</span>
         </div>
         <h1 className="font-brand text-2xl sm:text-3xl 2xl:text-4xl font-bold text-[#0F2747] tracking-tight">
           Symptom Analysis
         </h1>
         <p className="text-sm sm:text-base 2xl:text-lg text-slate-500 mt-1.5 max-w-3xl leading-relaxed">
-          For users who do not have health-measuring equipment and want to describe their symptoms for clinical evaluation.
+          For users who do not have clinical measuring devices and want to describe their symptoms for structured health evaluation.
         </p>
       </div>
 
@@ -108,12 +165,26 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
                 </h2>
               </div>
 
-              {analysisResult.urgencyLevel && (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-xs 2xl:text-sm font-bold font-mono">
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
-                  <span>{analysisResult.urgencyLevel}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {analysisResult.urgencyLevel && (
+                  <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs 2xl:text-sm font-bold font-mono ${
+                    analysisResult.urgencyLevel.toLowerCase().includes("attention") || analysisResult.urgencyLevel.toLowerCase().includes("emergency")
+                      ? "bg-rose-50 text-rose-800 border-rose-200"
+                      : analysisResult.urgencyLevel.toLowerCase().includes("monitoring")
+                      ? "bg-amber-50 text-amber-800 border-amber-200"
+                      : "bg-teal-50 text-[#0F766E] border-teal-200"
+                  }`}>
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{analysisResult.urgencyLevel}</span>
+                  </div>
+                )}
+                {analysisResult.recommendedSpecialist && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 text-xs 2xl:text-sm font-semibold">
+                    <UserCheck className="w-3.5 h-3.5 text-teal-600" />
+                    <span>{analysisResult.recommendedSpecialist}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <p className="text-sm sm:text-base 2xl:text-lg text-[#1E293B] leading-relaxed font-medium">
@@ -218,8 +289,9 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
         /* FORM VIEW */
         <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
           <div className="flex items-center justify-between pb-4 2xl:pb-5 border-b border-slate-100 mb-6 2xl:mb-8">
-            <h2 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono">
-              Describe Your Symptoms
+            <h2 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono flex items-center gap-2">
+              <FileText className="w-4 h-4 text-teal-600" />
+              <span>Describe Your Health Symptoms</span>
             </h2>
             <button
               type="button"
@@ -232,18 +304,46 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6 2xl:space-y-8">
+            {/* Quick Symptom Tags */}
+            <div>
+              <label className="block text-xs sm:text-sm 2xl:text-base font-semibold text-[#1E293B] mb-2 flex items-center gap-1.5">
+                <PlusCircle className="w-4 h-4 text-teal-600" />
+                <span>Common Symptoms (Click to select)</span>
+              </label>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {COMMON_SYMPTOM_TAGS.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer border ${
+                        isSelected
+                          ? "bg-[#0F766E] text-white border-[#0F766E] shadow-2xs scale-102"
+                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {isSelected ? `✓ ${tag}` : `+ ${tag}`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Detailed Description */}
             <div>
               <label className="block text-xs sm:text-sm 2xl:text-base font-semibold text-[#1E293B] mb-2">
-                Detailed Symptom Description
+                Detailed Description / How you feel
               </label>
               <textarea
-                rows={6}
+                rows={4}
                 value={symptomsText}
                 onChange={(e) => {
                   setSymptomsText(e.target.value);
                   if (errorMsg) setErrorMsg("");
                 }}
-                placeholder="Describe what you are experiencing (e.g. onset, severity, duration, and any accompanying discomfort)..."
+                placeholder="Describe what you are experiencing (e.g., started yesterday with fever, dry cough, and mild throat irritation)..."
                 className={`w-full p-4 2xl:p-5 bg-slate-50/60 rounded-xl border text-sm sm:text-base 2xl:text-lg text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all resize-y font-medium ${
                   errorMsg
                     ? "border-red-500 focus:border-red-500"
@@ -257,10 +357,71 @@ export default function SymptomAnalysisWorkspace({ onNavigateToCare, session }) 
               )}
             </div>
 
+            {/* Duration and Severity Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-[#1E293B] mb-2 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Duration</span>
+                </label>
+                <select
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  className="w-full p-3 bg-slate-50/60 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none"
+                >
+                  {DURATION_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-[#1E293B] mb-2 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Severity Level</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {SEVERITY_LEVELS.map((lvl) => {
+                    const active = severity === lvl.label;
+                    return (
+                      <button
+                        key={lvl.label}
+                        type="button"
+                        onClick={() => setSeverity(lvl.label)}
+                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          active
+                            ? `${lvl.color} font-bold shadow-2xs ring-2 ring-teal-500/20`
+                            : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        <div className="text-xs font-semibold">{lvl.label}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Medical Notes (Optional) */}
+            <div>
+              <label className="block text-xs sm:text-sm font-semibold text-[#1E293B] mb-1.5">
+                Existing Conditions / Medical Notes (Optional)
+              </label>
+              <input
+                type="text"
+                value={additionalNotes}
+                onChange={(e) => setAdditionalNotes(e.target.value)}
+                placeholder="e.g. Asthma, High BP, Diabetes, taking medications (optional)..."
+                className="w-full p-3 bg-slate-50/60 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none"
+              />
+            </div>
+
             {/* Submit Action */}
             <div className="pt-4 2xl:pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <span className="text-xs 2xl:text-sm text-slate-400">
-                Symptoms are analyzed using structured observational pattern models.
+                Observational patterns evaluate respiratory, systemic, and metabolic symptoms.
               </span>
 
               <button
