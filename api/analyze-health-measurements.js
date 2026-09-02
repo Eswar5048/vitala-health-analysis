@@ -14,7 +14,7 @@ function evaluateClinicalMeasurements(rawMeasurements = {}) {
   let hasEmergency = false;
   const detectedConcerns = [];
 
-  // Heart Rate
+  // Heart Rate (BPM)
   if (hr < 45 || hr > 140) {
     hasEmergency = true;
     penalty += 30;
@@ -36,7 +36,7 @@ function evaluateClinicalMeasurements(rawMeasurements = {}) {
     });
   }
 
-  // Blood Pressure
+  // Blood Pressure (mmHg)
   if (sbp >= 180 || dbp >= 120 || sbp < 75 || dbp < 50) {
     hasEmergency = true;
     penalty += 35;
@@ -58,7 +58,7 @@ function evaluateClinicalMeasurements(rawMeasurements = {}) {
     });
   }
 
-  // SpO2
+  // Oxygen Saturation SpO2 (%)
   if (spo2 < 90) {
     hasEmergency = true;
     penalty += 35;
@@ -102,7 +102,7 @@ function evaluateClinicalMeasurements(rawMeasurements = {}) {
     });
   }
 
-  // Respiratory Rate
+  // Respiratory Rate (br/min)
   if (rr > 30 || rr < 8) {
     hasEmergency = true;
     penalty += 25;
@@ -124,7 +124,7 @@ function evaluateClinicalMeasurements(rawMeasurements = {}) {
     });
   }
 
-  // Blood Glucose
+  // Blood Glucose (mg/dL)
   if (glu >= 250 || glu < 50) {
     hasEmergency = true;
     penalty += 25;
@@ -240,7 +240,25 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch (e) { body = {}; }
   }
   const measurements = body?.measurements || {};
-  const healthApiKey = process.env.GEMINI_HEALTH_API_KEY;
+  
+  // Cross-fallback key support (checks HEALTH, JULI, and general API key)
+  const healthApiKey =
+    process.env.GEMINI_HEALTH_API_KEY ||
+    process.env.GEMINI_JULI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    '';
+
+  const defaultParsedValues = {
+    age: parseFloat(measurements.age) || 35,
+    heartRate: parseFloat(measurements.heartRate) || 72,
+    systolicBP: parseFloat(measurements.systolicBP) || 120,
+    diastolicBP: parseFloat(measurements.diastolicBP) || 80,
+    bodyTemp: parseFloat(measurements.bodyTemp) || 98.6,
+    spO2: parseFloat(measurements.spO2) || 98,
+    respiratoryRate: parseFloat(measurements.respiratoryRate) || 16,
+    bloodGlucose: parseFloat(measurements.bloodGlucose) || 95,
+    thyroid: parseFloat(measurements.thyroid) || 1.8
+  };
 
   try {
     let assessmentData = null;
@@ -331,17 +349,7 @@ OUTPUT MUST BE VALID JSON MATCHING THIS EXACT SCHEMA:
           if (validCategories.includes(parsed.riskLevel) && parsed.parameterResults) {
             assessmentData = parsed;
             if (!assessmentData.parsedValues) {
-              assessmentData.parsedValues = {
-                age: parseFloat(measurements.age) || 35,
-                heartRate: parseFloat(measurements.heartRate) || 72,
-                systolicBP: parseFloat(measurements.systolicBP) || 120,
-                diastolicBP: parseFloat(measurements.diastolicBP) || 80,
-                bodyTemp: parseFloat(measurements.bodyTemp) || 98.6,
-                spO2: parseFloat(measurements.spO2) || 98,
-                respiratoryRate: parseFloat(measurements.respiratoryRate) || 16,
-                bloodGlucose: parseFloat(measurements.bloodGlucose) || 95,
-                thyroid: parseFloat(measurements.thyroid) || 1.8
-              };
+              assessmentData.parsedValues = defaultParsedValues;
             }
           }
         }

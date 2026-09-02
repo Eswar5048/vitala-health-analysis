@@ -77,7 +77,13 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch (e) { body = {}; }
   }
   const symptomsText = (body?.symptoms || '').trim();
-  const healthApiKey = process.env.GEMINI_HEALTH_API_KEY;
+
+  // Cross-fallback key support
+  const healthApiKey =
+    process.env.GEMINI_HEALTH_API_KEY ||
+    process.env.GEMINI_JULI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    '';
 
   if (!symptomsText) {
     return res.status(400).json({ success: false, error: 'Symptoms description is required.' });
