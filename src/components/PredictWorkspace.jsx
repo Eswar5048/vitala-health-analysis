@@ -1,32 +1,31 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   Activity,
   Heart,
-  Droplets,
-  Thermometer,
-  Wind,
   Gauge,
-  User,
+  Thermometer,
+  Droplets,
+  Wind,
   Zap,
-  AlertTriangle,
-  RefreshCw,
-  Radio,
-  ArrowLeft,
+  User,
   ShieldAlert,
-  MapPin,
+  ArrowLeft,
+  RefreshCw,
+  Sparkles,
+  Radio,
+  FileSpreadsheet,
+  AlertCircle,
 } from "lucide-react";
+import { submitHealthMeasurements } from "../services/predictService";
 import {
   validateMeasurements,
   evaluateHealthMeasurements,
 } from "../services/predictEngine";
-import { submitHealthMeasurements } from "../services/predictService";
 import { recordUserActivity } from "../services/db";
 import HealthMeasurementChart from "./HealthMeasurementChart";
 
 export default function PredictWorkspace({ onNavigateToCare, session }) {
   const [inputMode, setInputMode] = useState("manual"); // 'manual' | 'telemetry'
-
-  // 9 Parameter form states (empty/null initially per strict requirements)
   const [formData, setFormData] = useState({
     age: "",
     heartRate: "",
@@ -45,8 +44,13 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
 
   const handleFieldChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (formErrors[field]) {
-      setFormErrors((prev) => ({ ...prev, [field]: null }));
+    if (formErrors[field] || formErrors.general) {
+      setFormErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[field];
+        delete updated.general;
+        return updated;
+      });
     }
   };
 
@@ -123,7 +127,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
               Predict
             </h1>
             <p className="text-sm sm:text-base 2xl:text-lg text-slate-500 mt-1.5 max-w-3xl leading-relaxed">
-              For users with access to health measurements from medical equipment, diagnostic tools, or smart health devices.
+              Enter any measurements you have available. Missing values will automatically use standard reference baselines without penalizing your score.
             </p>
           </div>
 
@@ -198,7 +202,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                   </span>
                 </div>
                 <span className="text-[11px] 2xl:text-xs text-slate-400 font-medium">
-                  Prototype Health Index
+                  Health Index Score
                 </span>
               </div>
 
@@ -248,8 +252,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                           onClick={onNavigateToCare}
                           className="mt-3 px-4 py-2 bg-red-700 hover:bg-red-800 text-white text-xs 2xl:text-sm font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                         >
-                          <MapPin className="w-4 h-4 text-white" />
-                          <span>Find Emergency Care Near You</span>
+                          <span>Find Doctors & Clinics</span>
                         </button>
                       )}
                     </div>
@@ -259,64 +262,68 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
             </div>
           </div>
 
-          {/* Detected Concerns Section (if any) */}
+          {/* Interactive Chart Engine */}
+          <HealthMeasurementChart evaluationResult={evaluationResult} />
+
+          {/* Detected Concerns Section */}
           {evaluationResult.detectedConcerns && evaluationResult.detectedConcerns.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
               <h3 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono pb-3.5 border-b border-slate-100 mb-5 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 2xl:w-5 2xl:h-5 text-amber-500" />
-                <span>Detected Health Concerns</span>
+                <ShieldAlert className="w-4 h-4 2xl:w-5 2xl:h-5 text-amber-600" />
+                <span>Detected Physiological Concerns</span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 2xl:gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 2xl:gap-6">
                 {evaluationResult.detectedConcerns.map((concern, idx) => (
                   <div
                     key={idx}
-                    className={`p-5 2xl:p-6 rounded-xl border ${
-                      concern.severity === "critical"
-                        ? "bg-red-50/60 border-red-200"
-                        : "bg-amber-50/60 border-amber-200"
-                    }`}
+                    className="p-5 2xl:p-6 bg-slate-50/70 border border-slate-200/80 rounded-2xl flex flex-col justify-between"
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-bold text-sm 2xl:text-base text-[#0F2747]">
-                        {concern.parameter}
-                      </span>
-                      <span className="font-mono text-xs 2xl:text-sm font-bold text-slate-700">
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <span className="font-mono text-xs 2xl:text-sm font-bold text-slate-500 uppercase">
+                          {concern.parameter}
+                        </span>
+                        <span
+                          className={`text-[10px] 2xl:text-xs font-mono font-bold px-2 py-0.5 rounded-md uppercase ${
+                            concern.severity === "critical"
+                              ? "bg-red-100 text-red-700 border border-red-200"
+                              : "bg-amber-100 text-amber-800 border border-amber-200"
+                          }`}
+                        >
+                          {concern.severity}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-sm sm:text-base 2xl:text-lg text-[#0F2747] mb-1">
+                        {concern.issue}
+                      </h4>
+                      <p className="text-xs sm:text-sm 2xl:text-base text-slate-600 leading-relaxed">
+                        {concern.note}
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs sm:text-sm">
+                      <span className="text-slate-400 font-medium">Recorded Value:</span>
+                      <span className="font-mono font-bold text-[#0F2747]">
                         {concern.value}
                       </span>
                     </div>
-                    <div className="text-xs 2xl:text-sm font-semibold text-[#1E293B] mb-1">
-                      {concern.issue}
-                    </div>
-                    <p className="text-xs 2xl:text-sm text-slate-600 leading-relaxed">
-                      {concern.note}
-                    </p>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          {/* Interactive Visual Parameter Charts */}
-          <HealthMeasurementChart evaluationResult={evaluationResult} />
-
-          {/* Medical Safety Disclaimer */}
-          <div className="p-4 2xl:p-5 bg-slate-50 border border-slate-200/70 rounded-2xl text-center text-xs 2xl:text-sm text-slate-500 leading-relaxed">
-            <p className="font-semibold text-slate-700 mb-0.5">
-              Medical Research Disclaimer
-            </p>
-            <p className="max-w-4xl mx-auto">
-              This prototype is for educational and research purposes only. It is not a medical diagnostic tool and should not replace professional medical advice, diagnosis, or treatment.
-            </p>
-          </div>
         </div>
       ) : (
         /* FORM VIEW */
         <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 2xl:p-10 shadow-xs">
+          {/* Form Header */}
           <div className="flex items-center justify-between pb-4 2xl:pb-5 border-b border-slate-100 mb-6 2xl:mb-8">
-            <h2 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono">
-              Health Measurements Intake (9 Parameters)
-            </h2>
+            <div>
+              <h2 className="text-sm sm:text-base 2xl:text-lg font-bold text-[#0F2747] uppercase tracking-wide font-mono">
+                Health Measurements Intake (Flexible)
+              </h2>
+              <span className="text-xs text-slate-400">Fill what you know — unmeasured fields use standard healthy baselines</span>
+            </div>
             <button
               type="button"
               onClick={handleReset}
@@ -326,6 +333,13 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
               <span>Clear All Fields</span>
             </button>
           </div>
+
+          {formErrors.general && (
+            <div className="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span>{formErrors.general}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} noValidate className="space-y-6 2xl:space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 2xl:gap-8">
@@ -340,6 +354,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="1"
                     max="120"
+                    placeholder="e.g. 35"
                     value={formData.age}
                     onChange={(e) => handleFieldChange("age", e.target.value)}
                     className={`w-full pl-4 pr-16 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -370,6 +385,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="30"
                     max="240"
+                    placeholder="e.g. 72"
                     value={formData.heartRate}
                     onChange={(e) => handleFieldChange("heartRate", e.target.value)}
                     className={`w-full pl-4 pr-16 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -400,6 +416,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="60"
                     max="260"
+                    placeholder="e.g. 120"
                     value={formData.systolicBP}
                     onChange={(e) => handleFieldChange("systolicBP", e.target.value)}
                     className={`w-full pl-4 pr-18 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -430,6 +447,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="40"
                     max="160"
+                    placeholder="e.g. 80"
                     value={formData.diastolicBP}
                     onChange={(e) => handleFieldChange("diastolicBP", e.target.value)}
                     className={`w-full pl-4 pr-18 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -461,6 +479,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     step="0.1"
                     min="88.0"
                     max="112.0"
+                    placeholder="e.g. 98.6"
                     value={formData.bodyTemp}
                     onChange={(e) => handleFieldChange("bodyTemp", e.target.value)}
                     className={`w-full pl-4 pr-14 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -491,6 +510,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="50"
                     max="100"
+                    placeholder="e.g. 98"
                     value={formData.spO2}
                     onChange={(e) => handleFieldChange("spO2", e.target.value)}
                     className={`w-full pl-4 pr-14 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -521,6 +541,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="6"
                     max="60"
+                    placeholder="e.g. 16"
                     value={formData.respiratoryRate}
                     onChange={(e) => handleFieldChange("respiratoryRate", e.target.value)}
                     className={`w-full pl-4 pr-32 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -551,6 +572,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     type="number"
                     min="30"
                     max="600"
+                    placeholder="e.g. 95"
                     value={formData.bloodGlucose}
                     onChange={(e) => handleFieldChange("bloodGlucose", e.target.value)}
                     className={`w-full pl-4 pr-18 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -582,6 +604,7 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
                     step="0.01"
                     min="0.05"
                     max="50.0"
+                    placeholder="e.g. 1.8"
                     value={formData.thyroid}
                     onChange={(e) => handleFieldChange("thyroid", e.target.value)}
                     className={`w-full pl-4 pr-20 py-3 2xl:py-3.5 bg-slate-50/60 rounded-xl border text-sm sm:text-base text-[#1E293B] focus:bg-white focus:ring-2 focus:ring-teal-50 outline-none transition-all font-medium ${
@@ -604,8 +627,8 @@ export default function PredictWorkspace({ onNavigateToCare, session }) {
 
             {/* Submit Action */}
             <div className="pt-5 2xl:pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <span className="text-xs 2xl:text-sm text-slate-400">
-                All 9 health parameters will be evaluated against standard physiological reference ranges.
+              <span className="text-xs 2xl:text-sm text-slate-500 font-medium">
+                💡 Flexible Intake: Enter any measurements you have. Omitted parameters automatically use baseline physiological standards.
               </span>
 
               <button
