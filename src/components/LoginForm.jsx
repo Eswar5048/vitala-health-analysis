@@ -1,83 +1,47 @@
-﻿import React, { useState, useEffect, useRef } from "react";
-import { Eye, EyeOff, AlertCircle, User, Mail, Lock } from "lucide-react";
-import { registerMember, authenticateMember } from "../services/db";
+﻿import React, { useState } from "react";
+import { Eye, EyeOff, AlertCircle, User, Mail, Lock, CheckCircle2, ArrowLeft } from "lucide-react";
+import { registerMember, authenticateMember, resetMemberPassword } from "../services/db";
 
 export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
-  const [mode, setMode] = useState(initialMode); // 'signin' | 'signup'
+  const [mode, setMode] = useState(initialMode); // 'signin' | 'signup' | 'forgot'
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Form input states
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-
-  // Password typing & completion state
-  const [isTypingPassword, setIsTypingPassword] = useState(false);
-  const [isPasswordEntered, setIsPasswordEntered] = useState(false);
-  const typingTimeoutRef = useRef(null);
 
   // Validation & submission states
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePasswordChange = (e) => {
-    const val = e.target.value;
-    setPassword(val);
-
+    setPassword(e.target.value);
     if (errors.password) {
       setErrors((prev) => ({ ...prev, password: null }));
     }
     if (apiError) setApiError("");
-
-    if (!val || val.trim().length === 0) {
-      setIsTypingPassword(false);
-      setIsPasswordEntered(false);
-      setShowPassword(false);
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      return;
-    }
-
-    setIsTypingPassword(true);
-    setIsPasswordEntered(false);
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTypingPassword(false);
-      setIsPasswordEntered(true);
-    }, 600);
   };
 
-  const handlePasswordBlur = () => {
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+  const handleNewPasswordChange = (e) => {
+    setNewPassword(e.target.value);
+    if (errors.newPassword) {
+      setErrors((prev) => ({ ...prev, newPassword: null }));
     }
-    setIsTypingPassword(false);
-    if (password && password.trim().length > 0) {
-      setIsPasswordEntered(true);
-    } else {
-      setIsPasswordEntered(false);
-      setShowPassword(false);
-    }
+    if (apiError) setApiError("");
   };
-
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError("");
+    setSuccessMessage("");
     const newErrors = {};
 
     if (mode === "signup") {
@@ -93,10 +57,18 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
       newErrors.email = "Please enter your email address";
     }
 
-    if (!password || password.trim().length === 0) {
-      newErrors.password = "Please enter your password";
-    } else if (password.length < 4) {
-      newErrors.password = "Password must be at least 4 characters";
+    if (mode === "forgot") {
+      if (!newPassword || newPassword.trim().length === 0) {
+        newErrors.newPassword = "Please enter your new password";
+      } else if (newPassword.length < 4) {
+        newErrors.newPassword = "Password must be at least 4 characters";
+      }
+    } else {
+      if (!password || password.trim().length === 0) {
+        newErrors.password = "Please enter your password";
+      } else if (password.length < 4) {
+        newErrors.password = "Password must be at least 4 characters";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -124,6 +96,18 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
             loginTime: new Date().toLocaleTimeString(),
           });
         }
+      } else if (mode === "forgot") {
+        await resetMemberPassword({
+          email: email.trim(),
+          newPassword: newPassword,
+        });
+        setIsLoading(false);
+        setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
+        setPassword("");
+        setNewPassword("");
+        setTimeout(() => {
+          switchMode("signin");
+        }, 1500);
       } else {
         const result = await authenticateMember({
           email: email.trim(),
@@ -150,13 +134,14 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
     setIsTransitioning(true);
     setErrors({});
     setApiError("");
+    setSuccessMessage("");
+    setShowPassword(false);
+    setShowNewPassword(false);
     setTimeout(() => {
       setMode(newMode);
       setIsTransitioning(false);
-    }, 200);
+    }, 150);
   };
-
-  const canShowEye = isPasswordEntered && !isTypingPassword && password.length > 0;
 
   return (
     <div className="w-full">
@@ -168,14 +153,24 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
       >
         {mode === "signup"
           ? "Create your account to get started."
+          : mode === "forgot"
+          ? "Reset your password to regain access."
           : "Please enter your details to sign in."}
       </p>
 
-      {/* Global API / Database Error Banner */}
+      {/* Global API Error Banner */}
       {apiError && (
         <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200/80 text-left flex items-start gap-2 animate-fadeIn">
           <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
           <span className="text-xs text-red-700 leading-relaxed font-medium">{apiError}</span>
+        </div>
+      )}
+
+      {/* Global Success Banner */}
+      {successMessage && (
+        <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200/80 text-left flex items-start gap-2 animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <span className="text-xs text-emerald-800 leading-relaxed font-medium">{successMessage}</span>
         </div>
       )}
 
@@ -227,7 +222,7 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
           </div>
         )}
 
-        {/* E-Mail Address Field with Mail Icon */}
+        {/* E-Mail Address Field with Mail Icon (Sign In, Sign Up, & Forgot) */}
         <div>
           <label
             htmlFor="email"
@@ -241,7 +236,7 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
             </div>
             <input
               id="email"
-              type="text"
+              type="email"
               name="email"
               value={email}
               onChange={(e) => {
@@ -265,57 +260,109 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
           )}
         </div>
 
-        {/* Password Field with Lock Icon */}
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-xs font-semibold text-[#1E293B] mb-1.5"
-          >
-            Password
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <Lock className="h-4 w-4" />
+        {/* Password Field with Lock Icon (Sign In & Sign Up) */}
+        {mode !== "forgot" && (
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-xs font-semibold text-[#1E293B] mb-1.5"
+            >
+              Password
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Lock className="h-4 w-4" />
+              </div>
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={password}
+                onChange={handlePasswordChange}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                className={`w-full pl-10 pr-11 py-2.5 bg-white rounded-xl border text-sm text-[#1E293B] transition-all outline-none ${
+                  errors.password
+                    ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                    : "border-slate-300 hover:border-slate-400 focus:border-[#0F766E] focus:ring-2 focus:ring-teal-50"
+                }`}
+              />
+              {password.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-[#0F766E] transition-colors focus:outline-none cursor-pointer"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              )}
             </div>
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={password}
-              onChange={handlePasswordChange}
-              onBlur={handlePasswordBlur}
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              className={`w-full pl-10 pr-11 py-2.5 bg-white rounded-xl border text-sm text-[#1E293B] transition-all outline-none ${
-                errors.password
-                  ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-100"
-                  : "border-slate-300 hover:border-slate-400 focus:border-[#0F766E] focus:ring-2 focus:ring-teal-50"
-              }`}
-            />
-            {canShowEye && (
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-[#0F766E] transition-colors focus:outline-none cursor-pointer"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+            {errors.password && (
+              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-red-600">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{errors.password}</span>
+              </div>
             )}
           </div>
-          {errors.password && (
-            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-red-600">
-              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-              <span>{errors.password}</span>
-            </div>
-          )}
-        </div>
+        )}
 
-        {/* Checkbox Row */}
-        {mode === "signin" ? (
+        {/* New Password Field (Forgot Password Mode) */}
+        {mode === "forgot" && (
+          <div className="animate-fadeIn">
+            <label
+              htmlFor="newPassword"
+              className="block text-xs font-semibold text-[#1E293B] mb-1.5"
+            >
+              New Password
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Lock className="h-4 w-4" />
+              </div>
+              <input
+                id="newPassword"
+                type={showNewPassword ? "text" : "password"}
+                name="newPassword"
+                placeholder="Enter at least 4 characters"
+                value={newPassword}
+                onChange={handleNewPasswordChange}
+                autoComplete="new-password"
+                className={`w-full pl-10 pr-11 py-2.5 bg-white rounded-xl border text-sm text-[#1E293B] transition-all outline-none ${
+                  errors.newPassword
+                    ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                    : "border-slate-300 hover:border-slate-400 focus:border-[#0F766E] focus:ring-2 focus:ring-teal-50"
+                }`}
+              />
+              {newPassword.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-[#0F766E] transition-colors focus:outline-none cursor-pointer"
+                  aria-label={showNewPassword ? "Hide password" : "Show password"}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              )}
+            </div>
+            {errors.newPassword && (
+              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-red-600">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{errors.newPassword}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Checkbox Row (Sign In Mode) */}
+        {mode === "signin" && (
           <div className="flex items-center justify-between pt-0.5 text-xs">
             <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
               <input
@@ -328,13 +375,16 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
             </label>
             <button
               type="button"
-              onClick={() => {}}
+              onClick={() => switchMode("forgot")}
               className="text-slate-500 hover:text-[#0F766E] hover:underline transition-colors cursor-pointer"
             >
               Forgot password?
             </button>
           </div>
-        ) : (
+        )}
+
+        {/* Checkbox Row (Sign Up Mode) */}
+        {mode === "signup" && (
           <div className="pt-0.5 animate-fadeIn">
             <label className="flex items-start gap-2 text-xs text-slate-600 cursor-pointer select-none">
               <input
@@ -372,10 +422,22 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
             {isLoading ? (
               <div className="flex items-center gap-2">
                 <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
-                <span>{mode === "signup" ? "Creating account..." : "Signing in..."}</span>
+                <span>
+                  {mode === "signup"
+                    ? "Creating account..."
+                    : mode === "forgot"
+                    ? "Resetting password..."
+                    : "Signing in..."}
+                </span>
               </div>
             ) : (
-              <span>{mode === "signup" ? "Create account" : "Sign in"}</span>
+              <span>
+                {mode === "signup"
+                  ? "Create account"
+                  : mode === "forgot"
+                  ? "Reset password"
+                  : "Sign in"}
+              </span>
             )}
           </button>
         </div>
@@ -393,6 +455,15 @@ export default function LoginForm({ onLoginSuccess, initialMode = "signin" }) {
                 Sign in
               </button>
             </>
+          ) : mode === "forgot" ? (
+            <button
+              type="button"
+              onClick={() => switchMode("signin")}
+              className="inline-flex items-center gap-1.5 font-semibold text-[#0F766E] hover:underline cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Sign In</span>
+            </button>
           ) : (
             <>
               Don&apos;t have an account yet?{" "}

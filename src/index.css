@@ -36,6 +36,17 @@ html, body {
   font-family: "Sora", "Outfit", system-ui, sans-serif;
 }
 
+/* Suppress native browser password reveal icon to eliminate duplicate eye symbols */
+input::-ms-reveal,
+input::-ms-clear,
+input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 @keyframes letterFadeEaseIn {
   0% {
     opacity: 0;

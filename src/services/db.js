@@ -234,6 +234,39 @@ export async function updateMemberProfile({ currentEmail, newEmail, fullName, cu
 }
 
 /**
+ * Reset member password (Forgot Password flow)
+ */
+export async function resetMemberPassword({ email, newPassword }) {
+  await new Promise((res) => setTimeout(res, 250));
+
+  const cleanEmail = email ? email.trim().toLowerCase() : "";
+  if (!cleanEmail) {
+    throw new Error("Please enter your account email address.");
+  }
+  if (!newPassword || newPassword.trim().length < 4) {
+    throw new Error("New password must be at least 4 characters.");
+  }
+
+  const members = getCollection(STORAGE_KEYS.MEMBERS);
+  const targetMember = members.find((m) => m.email.toLowerCase() === cleanEmail);
+
+  if (!targetMember) {
+    throw new Error("No account found with this email address. Please check or sign up.");
+  }
+
+  targetMember.passwordHash = hashPassword(newPassword);
+  targetMember.updatedAt = new Date().toISOString();
+  saveCollection(STORAGE_KEYS.MEMBERS, members);
+  logAuditEvent("PASSWORD_RESET_SUCCESS", cleanEmail, { memberId: targetMember.id });
+
+  return {
+    success: true,
+    email: cleanEmail,
+    fullName: targetMember.fullName,
+  };
+}
+
+/**
  * Create session token
  */
 function createSession(member) {
