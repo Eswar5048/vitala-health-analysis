@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Vital Local Database Service
  * Provides structured, segregated, and secure member data storage using browser persistent store.
- * Built with async promise API for 1-to-1 drop-in compatibility with Cloud databases (Supabase / Firebase).
+ * Built with async promise API for 1-to-1 drop-in compatibility with Cloud databases.
  */
 
 const STORAGE_KEYS = {
@@ -10,6 +10,8 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: "vital_db_audit_logs",
   USER_HISTORY: "vital_db_user_history",
 };
+
+const memoryFallback = {};
 
 // Simple secure hash function for local credential storage
 function hashPassword(password) {
@@ -30,20 +32,25 @@ function generateUUID() {
 // Helper to get collection from storage
 function getCollection(key) {
   try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    }
+    return memoryFallback[key] || [];
   } catch (err) {
-    console.error(`[Vital DB] Error loading collection ${key}:`, err);
-    return [];
+    return memoryFallback[key] || [];
   }
 }
 
 // Helper to save collection to storage
 function saveCollection(key, data) {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+    memoryFallback[key] = data;
   } catch (err) {
-    console.error(`[Vital DB] Error saving collection ${key}:`, err);
+    memoryFallback[key] = data;
   }
 }
 
@@ -58,7 +65,7 @@ function logAuditEvent(action, memberEmail, details = {}) {
     timestamp: new Date().toISOString(),
   };
   logs.unshift(logEntry);
-  if (logs.length > 500) logs.pop(); // Keep recent 500 logs
+  if (logs.length > 500) logs.pop();
   saveCollection(STORAGE_KEYS.AUDIT_LOGS, logs);
 }
 
@@ -87,14 +94,13 @@ export function initializeDatabase() {
   }
 }
 
-// Auto initialize on import
 initializeDatabase();
 
 /**
  * Register a new member with validation and data segregation
  */
 export async function registerMember({ fullName, email, password }) {
-  await new Promise((res) => setTimeout(res, 250));
+  await new Promise((res) => setTimeout(res, 150));
 
   const cleanEmail = email.trim().toLowerCase();
   const cleanName = fullName.trim();
@@ -139,7 +145,7 @@ export async function registerMember({ fullName, email, password }) {
  * Authenticate existing member with email and password
  */
 export async function authenticateMember({ email, password }) {
-  await new Promise((res) => setTimeout(res, 250));
+  await new Promise((res) => setTimeout(res, 150));
 
   const cleanEmail = email.trim().toLowerCase();
   const members = getCollection(STORAGE_KEYS.MEMBERS);
@@ -156,7 +162,6 @@ export async function authenticateMember({ email, password }) {
     throw new Error("Incorrect password. Please try again.");
   }
 
-  // Update last login timestamp
   targetMember.lastLoginAt = new Date().toISOString();
   saveCollection(STORAGE_KEYS.MEMBERS, members);
   logAuditEvent("MEMBER_AUTHENTICATED", cleanEmail, { memberId: targetMember.id });
@@ -172,7 +177,7 @@ export async function authenticateMember({ email, password }) {
  * Update member account details (Name, Email, Password)
  */
 export async function updateMemberProfile({ currentEmail, newEmail, fullName, currentPassword, newPassword }) {
-  await new Promise((res) => setTimeout(res, 200));
+  await new Promise((res) => setTimeout(res, 150));
 
   const cleanCurrentEmail = currentEmail.trim().toLowerCase();
   const cleanNewEmail = newEmail ? newEmail.trim().toLowerCase() : cleanCurrentEmail;
@@ -192,7 +197,6 @@ export async function updateMemberProfile({ currentEmail, newEmail, fullName, cu
     throw new Error("Account not found.");
   }
 
-  // If email is changed, verify no duplicate
   if (cleanNewEmail !== cleanCurrentEmail) {
     const duplicate = members.find((m) => m.email.toLowerCase() === cleanNewEmail);
     if (duplicate) {
@@ -202,7 +206,6 @@ export async function updateMemberProfile({ currentEmail, newEmail, fullName, cu
 
   const member = members[targetIndex];
 
-  // If password update requested
   if (newPassword && newPassword.trim().length > 0) {
     if (!currentPassword) {
       throw new Error("Current password is required to change password.");
@@ -210,8 +213,8 @@ export async function updateMemberProfile({ currentEmail, newEmail, fullName, cu
     if (member.passwordHash !== hashPassword(currentPassword)) {
       throw new Error("Current password is incorrect.");
     }
-    if (newPassword.length < 6) {
-      throw new Error("New password must be at least 6 characters.");
+    if (newPassword.length < 4) {
+      throw new Error("New password must be at least 4 characters.");
     }
     member.passwordHash = hashPassword(newPassword);
   }
@@ -223,7 +226,6 @@ export async function updateMemberProfile({ currentEmail, newEmail, fullName, cu
   members[targetIndex] = member;
   saveCollection(STORAGE_KEYS.MEMBERS, members);
 
-  // Re-create active session with updated data
   const session = createSession(member);
   logAuditEvent("MEMBER_PROFILE_UPDATED", cleanNewEmail, { memberId: member.id });
 
@@ -237,7 +239,7 @@ export async function updateMemberProfile({ currentEmail, newEmail, fullName, cu
  * Reset member password (Forgot Password flow)
  */
 export async function resetMemberPassword({ email, newPassword }) {
-  await new Promise((res) => setTimeout(res, 250));
+  await new Promise((res) => setTimeout(res, 150));
 
   const cleanEmail = email ? email.trim().toLowerCase() : "";
   if (!cleanEmail) {
@@ -277,7 +279,7 @@ function createSession(member) {
     fullName: member.fullName,
     role: member.role || "member",
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   };
   saveCollection(STORAGE_KEYS.SESSIONS, [session]);
   return session;
@@ -324,16 +326,10 @@ function getSafeMemberProfile(member) {
   };
 }
 
-/**
- * Get all members (for administrative checks / telemetry)
- */
 export function getAllMembers() {
   return getCollection(STORAGE_KEYS.MEMBERS).map(getSafeMemberProfile);
 }
 
-/**
- * Get recent audit logs
- */
 export function getAuditLogs() {
   return getCollection(STORAGE_KEYS.AUDIT_LOGS);
 }
@@ -348,7 +344,7 @@ export function recordUserActivity({ email, type, title, summary, score, riskLev
   const historyItem = {
     id: generateUUID(),
     userEmail: cleanEmail,
-    type, // 'predict' | 'symptom' | 'care' | 'account'
+    type,
     title,
     summary,
     score: score || null,
@@ -365,7 +361,7 @@ export function recordUserActivity({ email, type, title, summary, score, riskLev
   };
 
   history.unshift(historyItem);
-  if (history.length > 500) history.pop(); // Keep recent 500 history items
+  if (history.length > 500) history.pop();
   saveCollection(STORAGE_KEYS.USER_HISTORY, history);
 
   return historyItem;
@@ -407,4 +403,3 @@ export function clearUserHistory(email) {
   saveCollection(STORAGE_KEYS.USER_HISTORY, updated);
   return [];
 }
-
